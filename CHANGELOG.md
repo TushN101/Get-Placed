@@ -42,3 +42,43 @@ This means potentially good fresher and entry-level opportunities could be misse
 - Ensure that genuinely senior-level positions are still filtered out during post-retrieval job evaluation.
 
 **Important:** A missing seniority-level field should not automatically disqualify an otherwise relevant job posting.
+
+---
+
+## Issue #003 — Scraper Execution Attempted in Cloud/Sandbox Environments
+
+**Status:** `NOT FIXED`  
+**Reported:** November 11  
+**Affected File:** `.agents/skills/find-jobs/SKILL.md`
+
+### Description
+When running the `find-jobs` skill, execution was sometimes attempted in an isolated cloud sandbox, remote container, or cloud subagent rather than directly in the user's local host environment. External job boards like FreeHire and LinkedIn block cloud and datacenter IP addresses, resulting in HTTP 403 Forbidden errors or anti-bot blocks.
+
+### Root Cause
+The `find-jobs` skill documentation (`.agents/skills/find-jobs/SKILL.md`) did not explicitly instruct agents to execute `scripts/fetch_jobs.py` directly on the local host machine, nor did it caution against running in cloud sandboxes or containers.
+
+### Expected Resolution
+- Update `.agents/skills/find-jobs/SKILL.md` to explicitly state that `scripts/fetch_jobs.py` must run directly on the user's local system via host terminal/command execution.
+- Emphasize that cloud sandboxes, remote environments, and datacenter subagents must not be used because target services block datacenter IPs.
+
+---
+
+## Issue #004 — Sequential Scraper Execution Latency and Lack of Exponential Backoff
+
+**Status:** `NOT FIXED`  
+**Reported:** November 11  
+**Affected File:** `.agents/skills/find-jobs/scripts/fetch_jobs.py`
+
+### Description
+The scraping script executes all 86 queries (43 FreeHire + 43 LinkedIn) sequentially one-by-one with pagination and delay sleeps. This creates over 200 sequential HTTP requests, causing execution to take 10 to 15+ minutes. Furthermore, retries rely on simple linear delays without exponential backoff or jitter, and do not handle HTTP 403 rate-limiting responses.
+
+### Root Cause
+`fetch_jobs.py` processes each query and page synchronously in a single thread loop. Network request retries in `http_get()` use linear scaling (`2 * (attempt + 1)`) without exponential backoff or randomized jitter, and do not back off on 403 responses.
+
+### Expected Resolution
+- Introduce controlled multi-threading via `concurrent.futures.ThreadPoolExecutor` to process queries concurrently while keeping memory and socket usage safe and standard-library only.
+- Implement domain-specific concurrency limits / pacing to prevent triggering HTTP 403 rate limits or IP blocks.
+- Refactor `http_get()` to use true exponential backoff with randomized jitter on transient HTTP errors (429, 403, 5xx) and network/socket exceptions.
+- Ensure thread-safe logging and stats aggregation.
+- Verify execution time improves significantly while queries still return valid results without 403 errors.
+
