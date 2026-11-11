@@ -15,6 +15,13 @@ Usage:
     python3 fetch_jobs.py --details            # also fetch LinkedIn job descriptions
     python3 fetch_jobs.py --root /path/to/Get-Placed
 
+Concurrency & Backoff options:
+    --freehire-workers N  (default 4)
+    --linkedin-workers N  (default 3)
+    --workers N           (override concurrency for all sources)
+    --delay S             (seconds between requests per worker, default 1.0)
+    --retries N           (retries with exponential backoff on 403/429/5xx, default 4)
+
 Output shape:
     {
       "fetched_at": "...",
@@ -30,9 +37,12 @@ Only the Python standard library is used.
 import argparse
 import html
 import json
+import random
 import re
 import sys
+import threading
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.error import HTTPError, URLError
@@ -48,13 +58,16 @@ LINKEDIN_DETAIL = "https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/{job_
 LINKEDIN_PAGE_SIZE = 25
 SUMMARY_CHARS = 500
 
+_log_lock = threading.Lock()
+
 
 # --------------------------------------------------------------------------- #
 # Small helpers
 # --------------------------------------------------------------------------- #
 
 def log(msg):
-    print(msg, file=sys.stderr, flush=True)
+    with _log_lock:
+        print(msg, file=sys.stderr, flush=True)
 
 
 class FetchError(Exception):
@@ -99,24 +112,41 @@ def load_queries(path):
     return good
 
 
-def http_get(url, retries=3, timeout=25):
-    """GET a URL and return the body as text. Retries on 429 and 5xx."""
+def http_get(url, retries=4, timeout=25, base_delay=1.5):
+    """GET a URL and return the body as text.
+    Retries on 403, 429, 5xx and network errors using exponential backoff with jitter.
+    """
     last = None
+    headers = {
+        "User-Agent": USER_AGENT,
+        "Accept-Language": "en-US,en;q=0.9",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,application/json,*/*;q=0.8",
+    }
     for attempt in range(retries):
-        req = Request(url, headers={"User-Agent": USER_AGENT, "Accept-Language": "en-US,en;q=0.9"})
+        req = Request(url, headers=headers)
         try:
             with urlopen(req, timeout=timeout) as resp:
                 return resp.read().decode("utf-8", errors="replace")
         except HTTPError as e:
             last = f"HTTP {e.code}"
-            if e.code in (429, 500, 502, 503, 504) and attempt < retries - 1:
-                time.sleep(2 * (attempt + 1))
+            # 429 Too Many Requests, 403 Forbidden / burst rate-limit, 5xx Server Errors
+            if e.code in (403, 429, 500, 502, 503, 504) and attempt < retries - 1:
+                retry_after = getattr(e, "headers", {}).get("Retry-After") if getattr(e, "headers", None) else None
+                if retry_after and retry_after.isdigit():
+                    sleep_time = float(retry_after) + random.uniform(0.5, 1.5)
+                else:
+                    multiplier = 2.0 if e.code in (403, 429) else 1.5
+                    sleep_time = (base_delay * multiplier * (2 ** attempt)) + random.uniform(0.3, 1.2)
+                log(f"    [retry {attempt + 1}/{retries}] HTTP {e.code} for {url[:75]}... backing off {sleep_time:.2f}s")
+                time.sleep(sleep_time)
                 continue
             break
         except (URLError, TimeoutError, OSError) as e:
             last = f"network error: {e}"
             if attempt < retries - 1:
-                time.sleep(2 * (attempt + 1))
+                sleep_time = (base_delay * (2 ** attempt)) + random.uniform(0.3, 1.2)
+                log(f"    [retry {attempt + 1}/{retries}] Network error ({e}) for {url[:75]}... backing off {sleep_time:.2f}s")
+                time.sleep(sleep_time)
                 continue
             break
     raise FetchError(last or "unknown error")
@@ -211,7 +241,7 @@ def normalize_freehire(item, query_id):
     }
 
 
-def fetch_freehire(query, max_pages, delay):
+def fetch_freehire(query, max_pages, delay, retries=4):
     """Page through a Freehire query using limit/offset. Returns (jobs, stat)."""
     qid = query["query_id"]
     stat = {"query_id": qid, "source": "freehire", "description": query.get("query_description", ""),
@@ -220,7 +250,7 @@ def fetch_freehire(query, max_pages, delay):
     for page in range(max_pages):
         url = set_query_param(query["query_url"], "offset", offset)
         try:
-            payload = json.loads(http_get(url))
+            payload = json.loads(http_get(url, retries=retries, base_delay=delay))
         except (FetchError, json.JSONDecodeError) as e:
             stat["error"] = f"page {page + 1}: {e}"
             break
@@ -236,7 +266,8 @@ def fetch_freehire(query, max_pages, delay):
         total = stat["reported_total"]
         if not data or (isinstance(total, int) and offset >= total):
             break
-        time.sleep(delay)
+        if page < max_pages - 1:
+            time.sleep(delay + random.uniform(0.1, 0.3))
     stat["fetched"] = len(jobs)
     return jobs, stat
 
@@ -304,7 +335,7 @@ def parse_linkedin_cards(page, query_id):
     return jobs
 
 
-def fetch_linkedin(query, max_pages, delay):
+def fetch_linkedin(query, max_pages, delay, retries=4):
     qid = query["query_id"]
     stat = {"query_id": qid, "source": "linkedin", "description": query.get("query_description", ""),
             "fetched": 0, "reported_total": None, "pages": 0, "error": None}
@@ -312,7 +343,7 @@ def fetch_linkedin(query, max_pages, delay):
     for page in range(max_pages):
         url = linkedin_page_url(query["query_url"], page * LINKEDIN_PAGE_SIZE)
         try:
-            body = http_get(url)
+            body = http_get(url, retries=retries, base_delay=delay)
         except FetchError as e:
             stat["error"] = f"page {page + 1}: {e}"
             break
@@ -325,18 +356,19 @@ def fetch_linkedin(query, max_pages, delay):
         jobs.extend(cards)
         if len(cards) < LINKEDIN_PAGE_SIZE:
             break
-        time.sleep(delay)
+        if page < max_pages - 1:
+            time.sleep(delay + random.uniform(0.1, 0.3))
     stat["fetched"] = len(jobs)
     return jobs, stat
 
 
-def add_linkedin_details(job, delay):
+def add_linkedin_details(job, delay, retries=3):
     """Fetch the full description + criteria for one LinkedIn job."""
     job_num = job["job_id"].split(":", 1)[1]
     if not job_num.isdigit():
         return
     try:
-        page = http_get(LINKEDIN_DETAIL.format(job_id=job_num), retries=2)
+        page = http_get(LINKEDIN_DETAIL.format(job_id=job_num), retries=retries, base_delay=delay)
     except FetchError:
         return
     m = re.search(r"show-more-less-html__markup[^>]*>(.*?)</div>", page, re.S)
@@ -350,7 +382,66 @@ def add_linkedin_details(job, delay):
         job["seniority_level"] = criteria[0]
         if len(criteria) > 1:
             job["employment_type"] = criteria[1]
-    time.sleep(delay)
+    time.sleep(delay + random.uniform(0.1, 0.3))
+
+
+# --------------------------------------------------------------------------- #
+# Concurrency Runner
+# --------------------------------------------------------------------------- #
+
+def fetch_source_queries(source_name, queries, fetcher, pages, delay, max_workers, retries=4):
+    """Fetch all queries for a given source using a controlled thread pool."""
+    log(f"[{source_name}] {len(queries)} queries (concurrency: {max_workers})")
+    stats_dict = {}
+    jobs_dict = {}
+
+    def run_query(q):
+        qid = q["query_id"]
+        desc = q.get("query_description", "")
+        log(f"  [{source_name}] starting {qid}: {desc}")
+        jobs, stat = fetcher(q, pages, delay, retries=retries)
+        status_msg = f"{stat['fetched']} jobs" + (f" (ERROR: {stat['error']})" if stat["error"] else "")
+        log(f"  [{source_name}] finished {qid} -> {status_msg}")
+        return qid, jobs, stat
+
+    if max_workers <= 1:
+        for q in queries:
+            qid, jobs, stat = run_query(q)
+            jobs_dict[qid] = jobs
+            stats_dict[qid] = stat
+    else:
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_to_qid = {executor.submit(run_query, q): q["query_id"] for q in queries}
+            for f in as_completed(future_to_qid):
+                qid = future_to_qid[f]
+                try:
+                    _, jobs, stat = f.result()
+                    jobs_dict[qid] = jobs
+                    stats_dict[qid] = stat
+                except Exception as e:
+                    log(f"  [{source_name}] unhandled exception on {qid}: {e}")
+                    stats_dict[qid] = {
+                        "query_id": qid,
+                        "source": source_name,
+                        "description": "",
+                        "fetched": 0,
+                        "reported_total": None,
+                        "pages": 0,
+                        "error": f"unhandled exception: {e}",
+                    }
+                    jobs_dict[qid] = []
+
+    # Preserve exact query file ordering for stats and jobs
+    ordered_stats = []
+    ordered_jobs = []
+    for q in queries:
+        qid = q["query_id"]
+        if qid in stats_dict:
+            ordered_stats.append(stats_dict[qid])
+        if qid in jobs_dict:
+            ordered_jobs.extend(jobs_dict[qid])
+
+    return ordered_jobs, ordered_stats
 
 
 # --------------------------------------------------------------------------- #
@@ -400,41 +491,49 @@ def main():
     ap.add_argument("--linkedin-pages", type=int, default=2, help="max pages per LinkedIn query (default 2)")
     ap.add_argument("--details", action="store_true", help="also fetch LinkedIn job descriptions (slower)")
     ap.add_argument("--details-limit", type=int, default=40, help="max LinkedIn detail fetches (default 40)")
-    ap.add_argument("--delay", type=float, default=1.5, help="seconds between requests (default 1.5)")
+    ap.add_argument("--delay", type=float, default=1.0, help="seconds between requests per worker (default 1.0)")
+    ap.add_argument("--freehire-workers", type=int, default=4, help="concurrency for Freehire queries (default 4)")
+    ap.add_argument("--linkedin-workers", type=int, default=3, help="concurrency for LinkedIn queries (default 3)")
+    ap.add_argument("--workers", type=int, default=None, help="override worker count for all sources")
+    ap.add_argument("--retries", type=int, default=4, help="max retries with exponential backoff on errors (default 4)")
     ap.add_argument("--min-per-query", type=int, default=3, help="warn if a query returns fewer jobs (default 3)")
     ap.add_argument("--min-total", type=int, default=10, help="warn if fewer unique jobs overall (default 10)")
     args = ap.parse_args()
+
+    freehire_workers = args.workers if args.workers is not None else args.freehire_workers
+    linkedin_workers = args.workers if args.workers is not None else args.linkedin_workers
 
     root = find_root(args.root)
     qdir = root / "database" / "queries"
     stats, raw_jobs, warnings = [], [], []
 
     sources = [
-        ("freehire", qdir / "freehireQueries.json", fetch_freehire, args.freehire_pages),
-        ("linkedin", qdir / "linkedinQueries.json", fetch_linkedin, args.linkedin_pages),
+        ("freehire", qdir / "freehireQueries.json", fetch_freehire, args.freehire_pages, freehire_workers),
+        ("linkedin", qdir / "linkedinQueries.json", fetch_linkedin, args.linkedin_pages, linkedin_workers),
     ]
-    for name, path, fetcher, pages in sources:
+    for name, path, fetcher, pages, workers in sources:
         try:
             queries = load_queries(path)
         except FetchError as e:
             warnings.append(f"{name}: {e}")
             continue
-        log(f"[{name}] {len(queries)} queries")
-        for q in queries:
-            log(f"  {q['query_id']}: {q.get('query_description', '')}")
-            jobs, stat = fetcher(q, pages, args.delay)
-            log(f"    -> {stat['fetched']} jobs" + (f" (ERROR: {stat['error']})" if stat["error"] else ""))
-            stats.append(stat)
-            raw_jobs.extend(jobs)
-            time.sleep(args.delay)
+
+        jobs, src_stats = fetch_source_queries(
+            name, queries, fetcher, pages, args.delay, workers, retries=args.retries
+        )
+        stats.extend(src_stats)
+        raw_jobs.extend(jobs)
 
     unique = dedupe(raw_jobs)
 
     if args.details:
         targets = [j for j in unique if j["source"] == "linkedin"][: args.details_limit]
-        log(f"[linkedin] fetching details for {len(targets)} jobs")
-        for j in targets:
-            add_linkedin_details(j, args.delay)
+        details_workers = min(linkedin_workers, 3)
+        log(f"[linkedin] fetching details for {len(targets)} jobs (concurrency: {details_workers})")
+        with ThreadPoolExecutor(max_workers=details_workers) as executor:
+            futures = [executor.submit(add_linkedin_details, j, args.delay, args.retries) for j in targets]
+            for f in as_completed(futures):
+                pass
 
     warnings.extend(build_warnings(stats, unique, args.min_per_query, args.min_total))
 
