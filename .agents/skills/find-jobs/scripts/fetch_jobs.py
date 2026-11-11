@@ -55,7 +55,7 @@ USER_AGENT = (
 )
 LINKEDIN_SEARCH = "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search"
 LINKEDIN_DETAIL = "https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/{job_id}"
-LINKEDIN_PAGE_SIZE = 25
+LINKEDIN_PAGE_SIZE = 10
 SUMMARY_CHARS = 500
 
 _log_lock = threading.Lock()

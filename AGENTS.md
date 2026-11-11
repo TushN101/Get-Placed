@@ -45,6 +45,10 @@ Read the relevant `SKILL.md` before running a skill. The details live there; thi
 
 Applications are tracked in the user's **Google Sheet** using the **Google Sheets plugin**, not in a local file. Check the sheet to know what the user has already applied to, and update it when they apply or their status changes. Details are in the tracking skill's `SKILL.md`.
 
+You can find it here : https://docs.google.com/spreadsheets/d/1fBQidTi3G70BCAPra2CrGErtczqMuGNC2CI8B_NW5Uw/edit?gid=1100535901#gid=1100535901 (its private so you need to use your plugin)
+Sheet name : Mastersheet
+Revelant sheet : Sheet 1 (Page - 1)
+
 ## General Rules
 
 - Read from `database/` before acting and update it after.
