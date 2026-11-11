@@ -1,0 +1,219 @@
+{
+  "queries": [
+    {
+      "query_id": "FH01",
+      "query_description": "Junior Backend Developer roles in Mumbai (strict city match)",
+      "query_url": "https://freehire.me/api/v1/jobs/search?category=backend&seniority=junior&cities=Mumbai&seniority_include_unspecified=true&sort=posted_at&order=desc"
+    },
+    {
+      "query_id": "FH02",
+      "query_description": "Junior Backend Developer roles in India (NO city filter \u2014 Mumbai fallback)",
+      "query_url": "https://freehire.me/api/v1/jobs/search?category=backend&seniority=junior&countries=IN&seniority_include_unspecified=true&sort=posted_at&order=desc"
+    },
+    {
+      "query_id": "FH03",
+      "query_description": "Junior Backend Developer roles, remote (global)",
+      "query_url": "https://freehire.me/api/v1/jobs/search?category=backend&seniority=junior&work_mode=remote&seniority_include_unspecified=true&sort=posted_at&order=desc"
+    },
+    {
+      "query_id": "FH04",
+      "query_description": "Python-skill roles in Mumbai (no seniority filter \u2014 catches unset seniority)",
+      "query_url": "https://freehire.me/api/v1/jobs/search?skills=python&cities=Mumbai&sort=posted_at&order=desc"
+    },
+    {
+      "query_id": "FH05",
+      "query_description": "Python-skill roles in India (NO city filter \u2014 Mumbai fallback, no seniority filter)",
+      "query_url": "https://freehire.me/api/v1/jobs/search?skills=python&countries=IN&sort=posted_at&order=desc"
+    },
+    {
+      "query_id": "FH06",
+      "query_description": "Junior Python-skill roles, remote",
+      "query_url": "https://freehire.me/api/v1/jobs/search?skills=python&work_mode=remote&seniority=junior&seniority_include_unspecified=true&sort=posted_at&order=desc"
+    },
+    {
+      "query_id": "FH07",
+      "query_description": "Flask-skill backend roles, remote",
+      "query_url": "https://freehire.me/api/v1/jobs/search?skills=flask&work_mode=remote&seniority=junior&seniority_include_unspecified=true&sort=posted_at&order=desc"
+    },
+    {
+      "query_id": "FH08",
+      "query_description": "Junior Backend roles at Indian startups",
+      "query_url": "https://freehire.me/api/v1/jobs/search?category=backend&company_type=startup&countries=IN&seniority=junior&seniority_include_unspecified=true&sort=posted_at&order=desc"
+    },
+    {
+      "query_id": "FH09",
+      "query_description": "Remote Backend roles requiring BOTH Python AND SQL (strict AND)",
+      "query_url": "https://freehire.me/api/v1/jobs/search?skills=python,sql&skills_mode=and&work_mode=remote&seniority=junior&seniority_include_unspecified=true&sort=posted_at&order=desc"
+    },
+    {
+      "query_id": "FH10",
+      "query_description": "Remote Backend roles mentioning 'rest api' in title/description",
+      "query_url": "https://freehire.me/api/v1/jobs/search?q=rest+api&category=backend&work_mode=remote&seniority=junior&seniority_include_unspecified=true&sort=posted_at&order=desc"
+    },
+    {
+      "query_id": "FH11",
+      "query_description": "Backend Engineering Internships across India",
+      "query_url": "https://freehire.me/api/v1/jobs/search?category=backend&seniority=intern&countries=IN&sort=posted_at&order=desc"
+    },
+    {
+      "query_id": "FH12",
+      "query_description": "Junior Software Engineer roles in Mumbai (strict city match)",
+      "query_url": "https://freehire.me/api/v1/jobs/search?category=software_engineering&seniority=junior&cities=Mumbai&seniority_include_unspecified=true&sort=posted_at&order=desc"
+    },
+    {
+      "query_id": "FH13",
+      "query_description": "Junior Software Engineer roles in India (NO city filter \u2014 Mumbai fallback)",
+      "query_url": "https://freehire.me/api/v1/jobs/search?category=software_engineering&seniority=junior&countries=IN&seniority_include_unspecified=true&sort=posted_at&order=desc"
+    },
+    {
+      "query_id": "FH14",
+      "query_description": "Junior Software Engineer roles, remote (global)",
+      "query_url": "https://freehire.me/api/v1/jobs/search?category=software_engineering&seniority=junior&work_mode=remote&seniority_include_unspecified=true&sort=posted_at&order=desc"
+    },
+    {
+      "query_id": "FH15",
+      "query_description": "Software Engineering Internships across India",
+      "query_url": "https://freehire.me/api/v1/jobs/search?category=software_engineering&seniority=intern&countries=IN&sort=posted_at&order=desc"
+    },
+    {
+      "query_id": "FH16",
+      "query_description": "Title-keyword 'junior software engineer' across India (catches unset seniority facet)",
+      "query_url": "https://freehire.me/api/v1/jobs/search?q=junior+software+engineer&q_fields=title&countries=IN&sort=posted_at&order=desc"
+    },
+    {
+      "query_id": "FH17",
+      "query_description": "Title-keyword 'junior developer' across India (broader keyword catch)",
+      "query_url": "https://freehire.me/api/v1/jobs/search?q=junior+developer&q_fields=title&countries=IN&sort=posted_at&order=desc"
+    },
+    {
+      "query_id": "FH18",
+      "query_description": "C++ Developer roles in Mumbai (title keyword)",
+      "query_url": "https://freehire.me/api/v1/jobs/search?q=c++&q_fields=title&cities=Mumbai&sort=posted_at&order=desc"
+    },
+    {
+      "query_id": "FH19",
+      "query_description": "C++ Developer roles in India (NO city filter \u2014 Mumbai fallback, title keyword)",
+      "query_url": "https://freehire.me/api/v1/jobs/search?q=c++&q_fields=title&countries=IN&sort=posted_at&order=desc"
+    },
+    {
+      "query_id": "FH20",
+      "query_description": "C++ Developer roles, remote (title keyword)",
+      "query_url": "https://freehire.me/api/v1/jobs/search?q=c++&q_fields=title&work_mode=remote&sort=posted_at&order=desc"
+    },
+    {
+      "query_id": "FH21",
+      "query_description": "Junior Data Engineering roles across India",
+      "query_url": "https://freehire.me/api/v1/jobs/search?category=data_engineering&seniority=junior&countries=IN&seniority_include_unspecified=true&sort=posted_at&order=desc"
+    },
+    {
+      "query_id": "FH22",
+      "query_description": "Title-keyword 'data engineer' across India (catches unset category)",
+      "query_url": "https://freehire.me/api/v1/jobs/search?q=data+engineer&q_fields=title&countries=IN&sort=posted_at&order=desc"
+    },
+    {
+      "query_id": "FH23",
+      "query_description": "Junior Security Engineer roles in Mumbai (strict city match)",
+      "query_url": "https://freehire.me/api/v1/jobs/search?category=security&seniority=junior&cities=Mumbai&seniority_include_unspecified=true&sort=posted_at&order=desc"
+    },
+    {
+      "query_id": "FH24",
+      "query_description": "Junior Security Engineer roles in India (NO city filter \u2014 Mumbai fallback)",
+      "query_url": "https://freehire.me/api/v1/jobs/search?category=security&seniority=junior&countries=IN&seniority_include_unspecified=true&sort=posted_at&order=desc"
+    },
+    {
+      "query_id": "FH25",
+      "query_description": "Junior Security Engineer roles, remote (global)",
+      "query_url": "https://freehire.me/api/v1/jobs/search?category=security&seniority=junior&work_mode=remote&seniority_include_unspecified=true&sort=posted_at&order=desc"
+    },
+    {
+      "query_id": "FH26",
+      "query_description": "Security Internships across India (any security sub-field)",
+      "query_url": "https://freehire.me/api/v1/jobs/search?category=security&seniority=intern&countries=IN&sort=posted_at&order=desc"
+    },
+    {
+      "query_id": "FH27",
+      "query_description": "Vulnerability Research / Pentest / AppSec roles in India (keyword OR)",
+      "query_url": "https://freehire.me/api/v1/jobs/search?q=vulnerability+OR+pentest+OR+appsec&category=security&countries=IN&seniority_include_unspecified=true&sort=posted_at&order=desc"
+    },
+    {
+      "query_id": "FH28",
+      "query_description": "Title/description keyword 'cybersecurity' across India (catches unset security category)",
+      "query_url": "https://freehire.me/api/v1/jobs/search?q=cybersecurity&countries=IN&sort=posted_at&order=desc"
+    },
+    {
+      "query_id": "FH29",
+      "query_description": "Junior SRE roles across India",
+      "query_url": "https://freehire.me/api/v1/jobs/search?category=sre&seniority=junior&countries=IN&seniority_include_unspecified=true&sort=posted_at&order=desc"
+    },
+    {
+      "query_id": "FH30",
+      "query_description": "Junior SRE roles, remote (entry-level experience bound)",
+      "query_url": "https://freehire.me/api/v1/jobs/search?category=sre&seniority=junior&seniority_include_unspecified=true&work_mode=remote&experience_years_max=2&experience_include_unspecified=true&sort=posted_at&order=desc"
+    },
+    {
+      "query_id": "FH31",
+      "query_description": "Title-keyword 'site reliability engineer' across India (catches unset sre category)",
+      "query_url": "https://freehire.me/api/v1/jobs/search?q=site+reliability+engineer&q_fields=title&countries=IN&sort=posted_at&order=desc"
+    },
+    {
+      "query_id": "FH32",
+      "query_description": "DevOps Engineering Internships across India",
+      "query_url": "https://freehire.me/api/v1/jobs/search?category=devops&seniority=intern&countries=IN&sort=posted_at&order=desc"
+    },
+    {
+      "query_id": "FH33",
+      "query_description": "IT Support roles in Mumbai (strict city match, no seniority filter)",
+      "query_url": "https://freehire.me/api/v1/jobs/search?category=it_support&cities=Mumbai&sort=posted_at&order=desc"
+    },
+    {
+      "query_id": "FH34",
+      "query_description": "IT Support roles in India (NO city filter \u2014 Mumbai fallback, no seniority filter)",
+      "query_url": "https://freehire.me/api/v1/jobs/search?category=it_support&countries=IN&sort=posted_at&order=desc"
+    },
+    {
+      "query_id": "FH35",
+      "query_description": "Title-keyword 'desktop support' across India",
+      "query_url": "https://freehire.me/api/v1/jobs/search?q=desktop+support&q_fields=title&category=it_support&countries=IN&sort=posted_at&order=desc"
+    },
+    {
+      "query_id": "FH36",
+      "query_description": "Title-keyword 'technical support' across India (tech-flavored support)",
+      "query_url": "https://freehire.me/api/v1/jobs/search?q=technical+support&q_fields=title&category=it_support&countries=IN&sort=posted_at&order=desc"
+    },
+    {
+      "query_id": "FH37",
+      "query_description": "Title-keyword 'it support' across India (broad IT support keyword catch)",
+      "query_url": "https://freehire.me/api/v1/jobs/search?q=it+support&q_fields=title&countries=IN&sort=posted_at&order=desc"
+    },
+    {
+      "query_id": "FH38",
+      "query_description": "Title-keyword 'intern' in Mumbai (catches unset seniority facet)",
+      "query_url": "https://freehire.me/api/v1/jobs/search?q=intern&q_fields=title&cities=Mumbai&sort=posted_at&order=desc"
+    },
+    {
+      "query_id": "FH39",
+      "query_description": "Title-keyword 'intern' across India (NO city filter \u2014 Mumbai fallback)",
+      "query_url": "https://freehire.me/api/v1/jobs/search?q=intern&q_fields=title&countries=IN&sort=posted_at&order=desc"
+    },
+    {
+      "query_id": "FH40",
+      "query_description": "Title-keyword 'trainee' across India (entry-level keyword catch)",
+      "query_url": "https://freehire.me/api/v1/jobs/search?q=trainee&q_fields=title&countries=IN&sort=posted_at&order=desc"
+    },
+    {
+      "query_id": "FH41",
+      "query_description": "Junior AI Engineer roles, remote (entry-level, LLM-adjacent)",
+      "query_url": "https://freehire.me/api/v1/jobs/search?category=ai_engineering&seniority=junior&seniority_include_unspecified=true&work_mode=remote&experience_years_max=2&experience_include_unspecified=true&sort=posted_at&order=desc"
+    },
+    {
+      "query_id": "FH42",
+      "query_description": "Junior Fullstack roles requiring Python, remote",
+      "query_url": "https://freehire.me/api/v1/jobs/search?category=fullstack&skills=python&work_mode=remote&seniority=junior&seniority_include_unspecified=true&sort=posted_at&order=desc"
+    },
+    {
+      "query_id": "FH43",
+      "query_description": "Junior QA Engineer roles across India (entry-level, pytest-adjacent)",
+      "query_url": "https://freehire.me/api/v1/jobs/search?category=qa&countries=IN&seniority=junior&seniority_include_unspecified=true&experience_years_max=2&experience_include_unspecified=true&sort=posted_at&order=desc"
+    }
+  ]
+}
